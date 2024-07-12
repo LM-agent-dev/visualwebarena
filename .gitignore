@@ -1,3 +1,8 @@
+# newly added
+config_files
+docker_images
+outputs
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

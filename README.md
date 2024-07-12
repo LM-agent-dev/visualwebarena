@@ -28,22 +28,18 @@
 ## Install
 ```bash
 # Python 3.10 (or 3.11, but not 3.12 cause 3.12 deprecated distutils needed here)
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+# python -m venv venv
+# source venv/bin/activate
+# pip install -r requirements.txt
 playwright install
 pip install -e .
 ```
 
-You can also run the unit tests to ensure that VisualWebArena is installed correctly:
-```
-pytest -x
-```
+As a minimal run, try `minimal_test.sh`.
 
 
 ## End-to-end Evaluation
-1. Setup the standalone environments.
-Please check out [this page](environment_docker/README.md) for details.
+1. reset all the environments with `./shells/reset_all.sh`.
 
 2. Configurate the urls for each website.
 First, export the `DATASET` to be `visualwebarena`:

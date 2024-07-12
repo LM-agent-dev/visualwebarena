@@ -11,10 +11,17 @@ from typing import Any
 import aiolimiter
 import openai
 from openai import AsyncOpenAI, OpenAI
-
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-aclient = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 from tqdm.asyncio import tqdm_asyncio
+
+
+api_base = os.getenv("OPENAI_API_BASE", "")
+if api_base != "":
+    logging.warn(f"Warning: OPENAI_API_BASE is set to {api_base}. This is expected if you are hosting sglang/vllm.")
+else:
+    api_base = "https://api.openai.com/v1"
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=api_base)
+aclient = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=api_base)
 
 
 def retry_with_exponential_backoff(  # type: ignore
@@ -135,7 +142,8 @@ async def agenerate_from_openai_completion(
         for prompt in prompts
     ]
     responses = await tqdm_asyncio.gather(*async_responses)
-    return [x["choices"][0]["text"] for x in responses]
+    # return [x["choices"][0]["text"] for x in responses]
+    return [x.choices[0].text for x in responses]
 
 
 @retry_with_exponential_backoff
@@ -161,7 +169,8 @@ def generate_from_openai_completion(
         top_p=top_p,
         stop=[stop_token],
     )
-    answer: str = response["choices"][0]["text"]
+    # answer: str = response["choices"][0]["text"]
+    answer: str = response.choices[0].text
     return answer
 
 
@@ -237,7 +246,8 @@ async def agenerate_from_openai_chat_completion(
         for message in messages_list
     ]
     responses = await tqdm_asyncio.gather(*async_responses)
-    return [x["choices"][0]["message"]["content"] for x in responses]
+    # return [x["choices"][0]["message"]["content"] for x in responses]
+    return [x.choices[0].message.content for x in responses]
 
 
 @retry_with_exponential_backoff

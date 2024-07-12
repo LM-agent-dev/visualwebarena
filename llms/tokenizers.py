@@ -1,19 +1,25 @@
 from typing import Any
 
 import tiktoken
-from transformers import LlamaTokenizer  # type: ignore
+from transformers import LlamaTokenizer, AutoTokenizer  # type: ignore
 
 
 class Tokenizer(object):
     def __init__(self, provider: str, model_name: str) -> None:
         if provider == "openai":
             self.tokenizer = tiktoken.encoding_for_model(model_name)
-        elif provider == "huggingface":
-            self.tokenizer = LlamaTokenizer.from_pretrained(model_name)
-            # turn off adding special tokens automatically
-            self.tokenizer.add_special_tokens = False  # type: ignore[attr-defined]
-            self.tokenizer.add_bos_token = False  # type: ignore[attr-defined]
-            self.tokenizer.add_eos_token = False  # type: ignore[attr-defined]
+        elif provider in ["huggingface", "sglang"]:
+            # self.tokenizer = LlamaTokenizer.from_pretrained(model_name)
+            # # turn off adding special tokens automatically
+            # self.tokenizer.add_special_tokens = False  # type: ignore[attr-defined]
+            # self.tokenizer.add_bos_token = False  # type: ignore[attr-defined]
+            # self.tokenizer.add_eos_token = False  # type: ignore[attr-defined]
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                model_name,
+                add_special_tokens=False,
+                add_bos_token=False,
+                add_eos_token=False,
+            )
         elif provider == "google":
             self.tokenizer = None  # Not used for input length computation, as Gemini is based on characters
         else:

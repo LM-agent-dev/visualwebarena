@@ -22,7 +22,7 @@ def call_llm(
     prompt: APIInput,
 ) -> str:
     response: str
-    if lm_config.provider == "openai":
+    if lm_config.provider in ["openai", "sglang"]:
         if lm_config.mode == "chat":
             assert isinstance(prompt, list)
             response = generate_from_openai_chat_completion(

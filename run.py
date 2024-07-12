@@ -530,7 +530,7 @@ if __name__ == "__main__":
     print(f"Total {len(test_file_list)} tasks left")
     args.render = False
     args.render_screenshot = True
-    args.save_trace_enabled = True
+    # args.save_trace_enabled = True
 
     args.current_viewport_only = True
     dump_config(args)
