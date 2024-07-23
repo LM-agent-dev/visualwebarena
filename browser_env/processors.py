@@ -1,11 +1,13 @@
 import json
 import pkgutil
 import re
+import importlib
 from collections import defaultdict
 from dataclasses import dataclass
 from io import BytesIO, StringIO
 from typing import Any, Optional, TypedDict, Union
 from urllib.parse import urljoin, urlparse
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,6 +40,8 @@ from .utils import (
     Observation,
     png_bytes_to_numpy,
 )
+
+root_dir = Path(importlib.util.find_spec("browser_env").submodule_search_locations[0]).parent
 
 
 def remove_unicode(input_string):
@@ -901,7 +905,7 @@ class ImageObservationProcessor(ObservationProcessor):
         draw = ImageDraw.Draw(img)
 
         # Load a TTF font with a larger size
-        font_path = "media/SourceCodePro-SemiBold.ttf"
+        font_path = str(root_dir.joinpath("media/SourceCodePro-SemiBold.ttf"))
         font_size, padding = 16, 2
         font = ImageFont.truetype(font_path, font_size)
 

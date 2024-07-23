@@ -397,10 +397,11 @@ class MultimodalCoTPromptConstructor(CoTPromptConstructor):
 
                 message.append({"role": "user", "content": content})
                 return message
-            else:
-                raise ValueError(
-                    f"GPT-4V models do not support mode {self.lm_config.mode}"
-                )
+        elif 'sglang' in self.lm_config.provider:
+            # e.g., see https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/tokenizer_manager.py#L141
+            raise ValueError(
+                f"In so far as I know, most OSS models do not support MultiImage Chat"
+            )
         elif "google" in self.lm_config.provider:
             if self.lm_config.mode == "completion":
                 message = [

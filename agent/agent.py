@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 from typing import Any, Optional
 
 import tiktoken
@@ -98,6 +99,14 @@ class TeacherForcingAgent(Agent):
             self.set_actions(action_seq)
 
 
+def is_vlm(lm_config: lm_config.LMConfig):
+    if "gemini" in lm_config.model or "gpt-4" in lm_config.model and "vision" in lm_config.model:
+        return True
+    if "llava" in lm_config.model or "mantis" in lm_config.model:
+        return True
+    return False
+
+
 class PromptAgent(Agent):
     """prompt-based agent that emits action given the history"""
 
@@ -116,9 +125,11 @@ class PromptAgent(Agent):
         self.captioning_fn = captioning_fn
 
         # Check if the model is multimodal.
-        if ("gemini" in lm_config.model or "gpt-4" in lm_config.model and "vision" in lm_config.model) and type(prompt_constructor) == MultimodalCoTPromptConstructor:
+        if is_vlm(self.lm_config) and type(prompt_constructor) == MultimodalCoTPromptConstructor:
+            logging.info("Using multimodal input in prompt.")
             self.multimodal_inputs = True
         else:
+            logging.info("Model is not multimodal.")
             self.multimodal_inputs = False
 
     def set_action_set_tag(self, tag: str) -> None:
