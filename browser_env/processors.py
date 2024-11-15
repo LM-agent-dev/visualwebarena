@@ -8,6 +8,8 @@ from io import BytesIO, StringIO
 from typing import Any, Optional, TypedDict, Union
 from urllib.parse import urljoin, urlparse
 from pathlib import Path
+from tqdm.auto import tqdm
+from tqdm.asyncio import tqdm as atqdm
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -82,6 +84,60 @@ def extract_data_items_from_aria(string: str) -> tuple[list[str], str]:
     data_items = groups[:-1]
     original_aria = groups[-1]
     return data_items, original_aria
+
+
+async def aprocess_accessibility_tree_node(
+    cursor, node,
+    processor,
+    client,
+    nodeid_to_cursor: dict
+):
+    nodeid_to_cursor[node["nodeId"]] = cursor
+    # usually because the node is not visible etc
+    if "backendDOMNodeId" not in node:
+        node["union_bound"] = None
+    else:
+        backend_node_id = str(node["backendDOMNodeId"])
+        if node["role"]["value"] == "RootWebArea":
+            # always inside the viewport
+            node["union_bound"] = [0.0, 0.0, 10.0, 10.0]
+        else:
+            response = await processor.get_bounding_client_rect(
+                client,
+                backend_node_id
+            )
+            if response.get("result", {}).get("subtype", "") == "error":
+                node["union_bound"] = None
+            else:
+                x = response["result"]["value"]["x"]
+                y = response["result"]["value"]["y"]
+                width = response["result"]["value"]["width"]
+                height = response["result"]["value"]["height"]
+                node["union_bound"] = [x, y, width, height]
+    return
+
+
+async def process_accessibility_tree(
+    accessibility_tree,
+    processor,
+    client,
+    nodeid_to_cursor: dict
+):
+    tasks  = [
+        aprocess_accessibility_tree_node(
+            cursor, node,
+            processor,
+            client,
+            nodeid_to_cursor
+        )
+        for cursor, node in enumerate(accessibility_tree[:4])
+    ]
+    await atqdm.gather(
+        *tasks,
+        total=len(tasks),
+        desc="Processing accessibility treee nodes"
+    )
+    return
 
 
 class TextObervationProcessor(ObservationProcessor):
@@ -424,8 +480,25 @@ class TextObervationProcessor(ObservationProcessor):
                 seen_ids.add(node["nodeId"])
         accessibility_tree = _accessibility_tree
 
+
+        ##### new code
+        snapshot = page.accessibility.snapshot()
+
+        # nodeid_to_cursor = {}
+        # asyncio.run(process_accessibility_tree(
+        #     accessibility_tree,
+        #     self,
+        #     client,
+        #     nodeid_to_cursor
+        # ))
+
+        ####### old code
         nodeid_to_cursor = {}
-        for cursor, node in enumerate(accessibility_tree):
+        for cursor, node in tqdm(
+            enumerate(accessibility_tree),
+            desc="Processing accessibility tree nodes",
+            total=len(accessibility_tree)
+        ):
             nodeid_to_cursor[node["nodeId"]] = cursor
             # usually because the node is not visible etc
             if "backendDOMNodeId" not in node:
@@ -483,7 +556,7 @@ class TextObervationProcessor(ObservationProcessor):
 
             config = info["config"]
             for node in accessibility_tree:
-                if not node["union_bound"]:
+                if 'union_bound' not in node or not node["union_bound"]:
                     remove_node_in_graph(node)
                     continue
 
@@ -667,8 +740,8 @@ class TextObervationProcessor(ObservationProcessor):
 
                     # Caption images.
                     if image_pixels:
-                        # Run in batches of 4.
-                        bs = 4
+                        # Run in batches of 16.
+                        bs = 16
                         captions = []
                         for i in range(0, len(image_pixels), bs):
                             try:
@@ -711,7 +784,7 @@ class TextObervationProcessor(ObservationProcessor):
                         print("L653 WARNING:", e)
 
             if self.observation_type == "accessibility_tree_with_captioner":
-                frame_ax_trees = self.fetch_page_accessibility_tree(
+                frame_ax_trees = self.fetch_page_accessibility_tree(  # TODO: bottleneck, very very slow
                     page,
                     browser_info,
                     current_viewport_only=self.current_viewport_only
@@ -1267,7 +1340,7 @@ class ObservationHandler:
         return spaces.Dict({"text": text_space, "image": image_space})
 
     def get_observation(self, page: Page) -> dict[str, Observation]:
-        text_obs = self.text_processor.process(page)
+        text_obs = self.text_processor.process(page)  # this has async init
         image_obs, content_str = self.image_processor.process(page)
         if content_str != "":
             text_obs = content_str

@@ -52,6 +52,10 @@ elif DATASET == "visualwebarena":
     CLASSIFIEDS_RESET_TOKEN = os.environ.get("CLASSIFIEDS_RESET_TOKEN", "")
     REDDIT_RESET_URL = os.environ.get("REDDIT_RESET_URL", "")
 
+    SHOPPING_ADMIN = os.environ.get("SHOPPING_ADMIN", "")
+    GITLAB = os.environ.get("GITLAB", "")
+    MAP = os.environ.get("MAP", "")
+
     assert (
         REDDIT
         and SHOPPING

@@ -177,6 +177,6 @@ if __name__ == "__main__":
     parser.add_argument("--auth_folder", type=str, default="./.auth")
     args = parser.parse_args()
     if not args.site_list:
-        main()
+        main(args.auth_folder)
     else:
         renew_comb(args.site_list, auth_folder=args.auth_folder)

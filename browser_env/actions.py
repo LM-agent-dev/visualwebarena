@@ -1350,10 +1350,16 @@ def execute_action(
 
 @beartype
 async def aexecute_action(
-    action: Action, page: APage, browser_ctx: ABrowserContext
+    action: Action,
+    page: APage,
+    browser_ctx: ABrowserContext,
+    obseration_processor: ObservationProcessor,
+    sleep_after_execution: float = 0.0,
 ) -> APage:
     """Execute the async action on the ChromeDriver."""
     action_type = action["action_type"]
+    num_tabs_before = len(browser_ctx.pages)
+
     match action_type:
         case ActionTypes.NONE:
             pass
@@ -1422,7 +1428,10 @@ async def aexecute_action(
                 )
         case ActionTypes.TYPE:
             if action["element_id"]:
-                raise NotImplementedError
+                element_id = action["element_id"]
+                element_center = obseration_processor.get_element_center(element_id)  # type: ignore[attr-defined]
+                await aexecute_mouse_click(element_center[0], element_center[1], page)
+                await aexecute_type(action["text"], page)
             elif action["element_role"] and action["element_name"]:
                 element_role = int(action["element_role"])
                 element_name = action["element_name"]
@@ -1481,6 +1490,13 @@ async def aexecute_action(
 
         case _:
             raise ValueError(f"Unknown action type: {action_type}")
+
+    await page.wait_for_timeout(int(sleep_after_execution * 1000))
+    num_tabs_now = len(browser_ctx.pages)
+    # if a new tab is opened by clicking, switch to the new tab
+    if num_tabs_now > num_tabs_before:
+        page = browser_ctx.pages[-1]
+        page.bring_to_front()
 
     return page
 

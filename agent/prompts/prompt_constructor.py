@@ -22,6 +22,8 @@ class Instruction(TypedDict):
 
 
 class PromptConstructor(object):
+    is_multimodal = False
+    
     def __init__(
         self,
         instruction_path: str | Path,
@@ -271,6 +273,7 @@ class CoTPromptConstructor(PromptConstructor):
 
 class MultimodalCoTPromptConstructor(CoTPromptConstructor):
     """The agent will perform step-by-step reasoning before the answer"""
+    is_multimodal = True
 
     def __init__(
         self,
